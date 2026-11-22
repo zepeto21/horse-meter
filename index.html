@@ -4,6 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0b0b0c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="HORSE METER">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-180.png">
 <title>HORSE METER · 클래식 택시미터</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -18,7 +25,7 @@
   html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font-family: 'Noto Sans KR', sans-serif; overflow: hidden; -webkit-user-select: none; user-select: none; }
   button { font-family: inherit; -webkit-tap-highlight-color: transparent; }
 
-  .app { height: 100%; display: flex; flex-direction: column; gap: 12px; padding: 14px 18px 16px; }
+  .app { height: 100%; height: 100dvh; display: flex; flex-direction: column; gap: 12px; padding: calc(14px + env(safe-area-inset-top)) calc(18px + env(safe-area-inset-right)) calc(16px + env(safe-area-inset-bottom)) calc(18px + env(safe-area-inset-left)); }
 
   /* 상단 바 */
   .top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex: 0 0 auto; }
@@ -83,12 +90,40 @@
   }
   /* 세로 휴대폰 */
   @media (max-width: 600px) and (orientation: portrait) {
-    .fare .num { font-size: clamp(48px, 15vw, 80px); }
-    .horse, .ground { width: 92px; }
-    .lamp { padding: 3px 16px; font-size: 16px; }
-    .chip .lbl { display: none; }
+    .app { gap: 10px; padding-left: calc(12px + env(safe-area-inset-left)); padding-right: calc(12px + env(safe-area-inset-right)); }
     .brand { font-size: 13px; letter-spacing: 1px; }
     .top { gap: 6px; }
+    .lamp { padding: 3px 16px; font-size: 16px; letter-spacing: 4px; }
+    .chip { padding: 6px 10px; }
+    .chip .lbl { display: none; }
+    .main { grid-template-rows: minmax(0, 1fr) auto; }
+    .device { padding: 10px; border-radius: 18px; }
+    .screen { padding: 14px 16px 10px; }
+    .screen > .row:nth-child(2) { flex-direction: column; align-items: stretch; gap: 10px; }
+    .horsebox { flex-direction: row; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+    .horse, .ground { width: 120px; }
+    .ground { order: 3; flex-basis: 100%; margin-top: -4px; }
+    .ground { width: 120px; flex-basis: auto; }
+    .fare { justify-content: flex-end; }
+    .fare .num { font-size: clamp(56px, 19vw, 96px); }
+    .speed { font-size: clamp(22px, 7vw, 32px); }
+    .side { gap: 10px; }
+    .stats { display: grid; order: 2; }
+    .stat { padding: 10px; }
+    .stat b { font-size: 15px; }
+    .keys { order: 1; }
+    .key { height: clamp(64px, 10vh, 84px); font-size: 24px; }
+  }
+  /* 가로 휴대폰(높이가 낮은 화면) */
+  @media (max-height: 480px) and (orientation: landscape) {
+    .app { padding-top: calc(6px + env(safe-area-inset-top)); padding-bottom: calc(8px + env(safe-area-inset-bottom)); gap: 6px; }
+    .main { grid-template-columns: minmax(0, 1fr) 200px; grid-template-rows: minmax(0, 1fr); }
+    .keys { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+    .key { height: calc((100dvh - 90px) / 2); max-height: 150px; font-size: 24px; }
+    .plate { display: none; }
+    .device { padding: 8px; }
+    .screen { padding: 10px 16px 8px; }
+    .lamp { padding: 2px 18px; font-size: 16px; }
   }
 
   /* 영수증 */
