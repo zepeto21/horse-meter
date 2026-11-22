@@ -3,7 +3,7 @@
 테슬라 브라우저에서 쓰는 클래식 택시미터 웹앱 (재미용)
 
 - 미터기: https://zepeto21.github.io/horse-meter/ (짧은 주소: https://bit.ly/4j9oxQS)
-- 차량 진단: https://zepeto21.github.io/horse-meter/diag.html
+- 차량 진단: https://zepeto21.github.io/horse-meter/diag.html (짧은 주소: https://bit.ly/4tbHEOK)
 
 ## 기능
 - 옛날 택시미터 디자인, 차가 달리면 말이 달리고 멈추면 말도 멈춤
