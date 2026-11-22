@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HORSE METER · 차량 진단</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: #0b0b0c; color: #e8e8e8; font-family: 'Noto Sans KR', system-ui, sans-serif; }
+  .wrap { padding: 16px 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
+  h1 { grid-column: 1 / -1; margin: 0; font-size: 22px; color: #f2c94c; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+  h1 a { font-size: 16px; color: #7ee2a0; }
+  .card { background: #161618; border-radius: 14px; padding: 14px 16px; }
+  .card h2 { margin: 0 0 8px; font-size: 15px; color: #9a9a9a; font-weight: 700; }
+  .kv { display: flex; justify-content: space-between; gap: 10px; font-size: 18px; line-height: 1.7; }
+  .kv b { font-family: ui-monospace, monospace; color: #fff; text-align: right; word-break: break-all; }
+  .ok { color: #3bd16f !important; } .bad { color: #ff6b6b !important; } .wait { color: #f2c94c !important; }
+  .ua { font-family: ui-monospace, monospace; font-size: 12px; color: #b5b5b5; word-break: break-all; }
+  .tip { grid-column: 1 / -1; font-size: 14px; color: #9a9a9a; line-height: 1.6; }
+  button { min-height: 48px; padding: 0 18px; border: 0; border-radius: 10px; background: #f2c94c; color: #1b1b1b; font-weight: 900; font-size: 16px; cursor: pointer; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>차량 진단 <span><button id="copy" type="button">결과 복사</button> <a href="./">미터기로 →</a></span></h1>
+
+  <div class="card">
+    <h2>화면 크기</h2>
+    <div class="kv"><span>보이는 영역</span><b id="vp">-</b></div>
+    <div class="kv"><span>화면 전체</span><b id="scr">-</b></div>
+    <div class="kv"><span>픽셀 배율</span><b id="dpr">-</b></div>
+    <div class="kv"><span>미터기 배치</span><b id="layout">-</b></div>
+  </div>
+
+  <div class="card">
+    <h2>GPS</h2>
+    <div class="kv"><span>상태</span><b id="gState" class="wait">확인 중…</b></div>
+    <div class="kv"><span>정확도</span><b id="gAcc">-</b></div>
+    <div class="kv"><span>속도</span><b id="gSpd">-</b></div>
+    <div class="kv"><span>갱신 횟수 / 간격</span><b id="gCnt">-</b></div>
+    <div class="kv"><span>누적 거리</span><b id="gDist">-</b></div>
+  </div>
+
+  <div class="card">
+    <h2>브라우저 기능</h2>
+    <div class="kv"><span>화면 꺼짐 방지</span><b id="wl">-</b></div>
+    <div class="kv"><span>저장 공간</span><b id="ls">-</b></div>
+    <div class="kv"><span>시간</span><b id="now">-</b></div>
+    <div class="ua" id="ua"></div>
+  </div>
+
+  <div class="tip">
+    ① 정차 중에 이 화면을 사진으로 찍어 주세요. ② 동승자가 주행 중에 한 번 더 찍어 주세요(운전자는 조작 금지).<br>
+    GPS 상태가 '권한 거부'나 '지원 안 함'이면 테슬라 브라우저 GPS를 쓸 수 없어서 휴대폰 GPS 방식으로 바꿔야 해요.
+  </div>
+</div>
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+function size() {
+  $('vp').textContent = innerWidth + ' × ' + innerHeight;
+  $('scr').textContent = screen.width + ' × ' + screen.height;
+  $('dpr').textContent = (window.devicePixelRatio || 1).toFixed(2);
+  $('layout').textContent = innerWidth >= 1000 ? '넓은 화면(정차용)' : '좁은 화면(주행용)';
+}
+addEventListener('resize', size); size();
+$('ua').textContent = navigator.userAgent;
+$('wl').textContent = 'wakeLock' in navigator ? '지원' : '미지원';
+try { localStorage.setItem('hm.t', '1'); $('ls').textContent = '사용 가능'; } catch (e) { $('ls').textContent = '사용 불가'; }
+setInterval(() => { $('now').textContent = new Date().toLocaleTimeString('ko-KR'); }, 1000);
+
+let cnt = 0, lastT = 0, gaps = [], last = null, dist = 0;
+function hav(a, b) { const R = 6371000, r = Math.PI / 180, dLa = (b.latitude - a.latitude) * r, dLo = (b.longitude - a.longitude) * r;
+  const x = Math.sin(dLa / 2) ** 2 + Math.cos(a.latitude * r) * Math.cos(b.latitude * r) * Math.sin(dLo / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(x)); }
+function setState(text, cls) { const el = $('gState'); el.textContent = text; el.className = cls; }
+if (!('geolocation' in navigator)) setState('지원 안 함', 'bad');
+else navigator.geolocation.watchPosition(p => {
+  const c = p.coords, t = p.timestamp || Date.now();
+  cnt++; if (lastT) { gaps.push((t - lastT) / 1000); if (gaps.length > 20) gaps.shift(); } lastT = t;
+  if (last && c.accuracy < 60) dist += hav(last, c); if (c.accuracy < 60) last = c;
+  setState('연결됨', 'ok');
+  $('gAcc').textContent = '±' + Math.round(c.accuracy) + ' m';
+  $('gAcc').className = c.accuracy <= 20 ? 'ok' : c.accuracy <= 60 ? 'wait' : 'bad';
+  $('gSpd').textContent = c.speed == null ? '제공 안 함' : (c.speed * 3.6).toFixed(1) + ' km/h';
+  const avg = gaps.length ? (gaps.reduce((a, b) => a + b, 0) / gaps.length).toFixed(1) + '초' : '-';
+  $('gCnt').textContent = cnt + '회 / ' + avg;
+  $('gDist').textContent = (dist / 1000).toFixed(3) + ' km';
+}, e => {
+  setState(e.code === 1 ? '권한 거부' : e.code === 2 ? '위치 못 찾음' : '시간 초과', 'bad');
+}, { enableHighAccuracy: true, maximumAge: 0, timeout: 20000 });
+
+$('copy').onclick = async () => {
+  const text = ['보이는 영역 ' + $('vp').textContent, '화면 ' + $('scr').textContent, '배율 ' + $('dpr').textContent,
+    'GPS ' + $('gState').textContent + ' ' + $('gAcc').textContent + ' ' + $('gSpd').textContent + ' ' + $('gCnt').textContent,
+    navigator.userAgent].join('\n');
+  try { await navigator.clipboard.writeText(text); $('copy').textContent = '복사됨'; } catch (e) { $('copy').textContent = '복사 안 됨 — 사진으로 찍어 주세요'; }
+};
+</script>
+</body>
+</html>
